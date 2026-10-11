@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coyote Animation Preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .preview-container {
+            width: 320px;
+            height: 568px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 2rem;
+            border: 8px solid #1a1a1a;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .coyote-wrapper {
+            position: absolute;
+            /* 
+               AQUÍ PUEDES AJUSTAR LA POSICIÓN DEL COYOTE:
+               top: 50%;
+               left: 50%;
+               transform: translate(-50%, -50%);
+               O usar bottom/left según necesites.
+            */
+            bottom: 0px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .coyote-wrapper img {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            pointer-events: none;
+            object-fit: contain;
+        }
+
+        /* Ocultar imágenes no activas */
+        .hidden-layer { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8 flex flex-col md:flex-row gap-8 justify-center items-start">
+
+    <!-- Left Column: Preview -->
+    <div class="flex-shrink-0 flex flex-col items-center gap-4">
+        <h2 class="text-xl font-bold text-gray-800">Preview</h2>
+        <div id="preview-bg" class="preview-container" style="background-image: url('assets/background/day.png');">
+            <div id="coyote-wrapper" class="coyote-wrapper">
+                <img id="body-img" src="" alt="Coyote Body" class="">
+                <img id="face-img" src="" alt="Coyote Face" class="">
+                <img id="love-img" src="" alt="Coyote Love" class="hidden-layer z-20">
+                <img id="sleep-img" src="" alt="Coyote Sleep" class="hidden-layer">
+            </div>
+        </div>
+        <p class="text-sm text-gray-500">Haz clic en el coyote para la animación de amor (Día)</p>
+    </div>
+
+    <!-- Right Column: Controls -->
+    <div class="flex-1 bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg">
+        <nav class="border-b pb-4 mb-6 flex justify-between items-center">
+            <h1 class="text-2xl font-black text-gray-800">Coyote Settings</h1>
+            <div class="space-x-3 text-sm">
+                <a href="./how.html" class="text-blue-600 hover:underline">How To</a>
+                <a href="./index.html" class="text-blue-600 hover:underline">Inicio</a>
+            </div>
+        </nav>
+
+        <form id="controls-form" class="space-y-6">
+            <!-- Global Settings -->
+            <div class="bg-gray-50 p-4 rounded-xl space-y-4 border border-gray-100">
+                <h3 class="font-bold text-gray-700">Ajustes Globales</h3>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Tamaño del coyote</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2"><input type="radio" name="size" value="Big" checked> Grande</label>
+                        <label class="flex items-center gap-2"><input type="radio" name="size" value="Medium"> Mediano</label>
+                        <label class="flex items-center gap-2"><input type="radio" name="size" value="Small"> Pequeño</label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Momento del Día</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2"><input type="radio" name="time" value="day" checked> Día (Despierto)</label>
+                        <label class="flex items-center gap-2"><input type="radio" name="time" value="night"> Noche (Dormido)</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Awake Controls (Day) -->
+            <div id="awake-controls" class="bg-blue-50 p-4 rounded-xl space-y-4 border border-blue-100">
+                <h3 class="font-bold text-blue-800">Controles Modo Despierto</h3>
+                
+                <div>
+                    <label class="flex justify-between text-sm font-semibold mb-1 text-gray-700">
+                        Velocidad de Cuerpo (ms/frame) <span id="body-speed-val">100</span>
+                    </label>
+                    <input type="range" id="body-speed" min="20" max="300" value="100" class="w-full">
+                </div>
+                
+                <div>
+                    <button type="button" id="btn-restart-body" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                        Reiniciar animación del cuerpo (Cola)
+                    </button>
+                </div>
+
+                <div class="pt-2 border-t border-blue-200">
+                    <label class="flex justify-between text-sm font-semibold mb-1 text-gray-700">
+                        Intervalo de Parpadeo (ms entre parpadeos) <span id="blink-interval-val">3000</span>
+                    </label>
+                    <input type="range" id="blink-interval" min="500" max="8000" value="3000" step="100" class="w-full">
+                </div>
+
+                <div>
+                    <label class="flex justify-between text-sm font-semibold mb-1 text-gray-700">
+                        Velocidad de Parpadeo (ms/frame) <span id="blink-speed-val">50</span>
+                    </label>
+                    <input type="range" id="blink-speed" min="10" max="200" value="50" class="w-full">
+                </div>
+
+                <div class="pt-2 border-t border-blue-200">
+                    <label class="flex justify-between text-sm font-semibold mb-1 text-gray-700">
+                        Velocidad de Amor (ms/frame) <span id="love-speed-val">80</span>
+                    </label>
+                    <input type="range" id="love-speed" min="20" max="300" value="80" class="w-full">
+                </div>
+            </div>
+
+            <!-- Sleep Controls (Night) -->
+            <div id="sleep-controls" class="bg-indigo-50 p-4 rounded-xl space-y-4 border border-indigo-100 hidden-layer">
+                <h3 class="font-bold text-indigo-800">Controles Modo Dormido</h3>
+                <div>
+                    <label class="flex justify-between text-sm font-semibold mb-1 text-gray-700">
+                        Velocidad de Sueño (ms/frame) <span id="sleep-speed-val">150</span>
+                    </label>
+                    <input type="range" id="sleep-speed" min="50" max="500" value="150" class="w-full">
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // DOM Elements
+        const bgLayer = document.getElementById('preview-bg');
+        const bodyImg = document.getElementById('body-img');
+        const faceImg = document.getElementById('face-img');
+        const loveImg = document.getElementById('love-img');
+        const sleepImg = document.getElementById('sleep-img');
+        const wrapper = document.getElementById('coyote-wrapper');
+        
+        const awakeControls = document.getElementById('awake-controls');
+        const sleepControls = document.getElementById('sleep-controls');
+        const btnRestartBody = document.getElementById('btn-restart-body');
+
+        // Inputs
+        const sizeRadios = document.getElementsByName('size');
+        const timeRadios = document.getElementsByName('time');
+        
+        const bodySpeedInput = document.getElementById('body-speed');
+        const blinkIntervalInput = document.getElementById('blink-interval');
+        const blinkSpeedInput = document.getElementById('blink-speed');
+        const loveSpeedInput = document.getElementById('love-speed');
+        const sleepSpeedInput = document.getElementById('sleep-speed');
+
+        // Labels mapping
+        const sliders = [
+            { id: 'body-speed', valId: 'body-speed-val' },
+            { id: 'blink-interval', valId: 'blink-interval-val' },
+            { id: 'blink-speed', valId: 'blink-speed-val' },
+            { id: 'love-speed', valId: 'love-speed-val' },
+            { id: 'sleep-speed', valId: 'sleep-speed-val' }
+        ];
+
+        // Update slider labels
+        sliders.forEach(s => {
+            const el = document.getElementById(s.id);
+            const valEl = document.getElementById(s.valId);
+            el.addEventListener('input', () => valEl.textContent = el.value);
+        });
+
+        // Folder mapping (Case Sensitive)
+        const pathsMap = {
+            Big: { body: 'awake/Body', face: 'awake/Face', love: 'love', sleep: 'sleep' },
+            Medium: { body: 'awake/body', face: 'awake/face', love: 'love', sleep: 'sleep' },
+            Small: { body: 'awake/body', face: 'awake/face', love: 'love', sleep: 'sleep' }
+        };
+
+        // State
+        let currentSize = 'Big';
+        let isDay = true;
+        let baseDir = 'assets/Coyote/';
+
+        // Animation Timeouts
+        let bodyTimeout, faceTimeout, loveTimeout, sleepTimeout;
+        let isLovePlaying = false;
+
+        
+        function getPath(part, frameName) {
+            const partFolder = pathsMap[currentSize][part];
+            return `${baseDir}${currentSize}/${partFolder}/${frameName}.png`;
+        }
+
+        // --- BODY ANIMATION ---
+        let bodyPhase = 'raising'; // raising, pingpong
+        let bodyFrame = 1;
+        let bodyDirection = 1;
+
+        function animateBody() {
+            if (!isDay) return;
+            const speed = parseInt(bodySpeedInput.value);
+
+            if (bodyPhase === 'base') {
+                bodyImg.src = getPath('body', 'base');
+                bodyPhase = 'raising';
+                bodyFrame = 1;
+                bodyTimeout = setTimeout(animateBody, speed);
+                return;
+            }
+
+            if (bodyPhase === 'raising') {
+                bodyImg.src = getPath('body', `raise_${bodyFrame}`);
+                bodyFrame++;
+                if (bodyFrame > 7) {
+                    bodyPhase = 'pingpong';
+                    bodyFrame = 6;
+                    bodyDirection = -1;
+                }
+            } else if (bodyPhase === 'pingpong') {
+                bodyImg.src = getPath('body', `raise_${bodyFrame}`);
+                bodyFrame += bodyDirection;
+                if (bodyFrame > 7) {
+                    bodyFrame = 6;
+                    bodyDirection = -1;
+                } else if (bodyFrame < 4) {
+                    bodyFrame = 5;
+                    bodyDirection = 1;
+                }
+            }
+            bodyTimeout = setTimeout(animateBody, speed);
+        }
+
+        // Restart Body Event
+        btnRestartBody.addEventListener('click', () => {
+            clearTimeout(bodyTimeout);
+            bodyPhase = 'base';
+            animateBody();
+        });
+
+        // --- FACE (BLINK) ANIMATION ---
+        let faceFrame = 1;
+        let facePhase = 'waiting'; 
+
+        function animateFace() {
+            if (!isDay) return;
+            
+            if (facePhase === 'waiting') {
+                faceImg.src = getPath('face', 'base');
+                const interval = parseInt(blinkIntervalInput.value);
+                facePhase = 'blinking';
+                faceFrame = 1;
+                faceTimeout = setTimeout(animateFace, interval);
+            } else if (facePhase === 'blinking') {
+                const speed = parseInt(blinkSpeedInput.value);
+                faceImg.src = getPath('face', `blink_${faceFrame}`);
+                faceFrame++;
+                if (faceFrame > 8) {
+                    facePhase = 'waiting';
+                }
+                faceTimeout = setTimeout(animateFace, speed);
+            }
+        }
+
+        // --- LOVE ANIMATION ---
+        let loveFrame = 1;
+        
+        function animateLove() {
+            if (!isDay) return;
+            isLovePlaying = true;
+            loveImg.classList.remove('hidden-layer');
+            const speed = parseInt(loveSpeedInput.value);
+
+            loveImg.src = getPath('love', `${loveFrame}`);
+            loveFrame++;
+
+            if (loveFrame <= 21) {
+                loveTimeout = setTimeout(animateLove, speed);
+            } else {
+                loveImg.classList.add('hidden-layer');
+                isLovePlaying = false;
+                loveFrame = 1;
+            }
+        }
+
+        wrapper.addEventListener('click', () => {
+            if (isDay && !isLovePlaying) {
+                loveFrame = 1;
+                animateLove();
+            }
+        });
+
+        // --- SLEEP ANIMATION ---
+        let sleepFrame = 1;
+        function animateSleep() {
+            if (isDay) return;
+            const speed = parseInt(sleepSpeedInput.value);
+            
+            sleepImg.src = getPath('sleep', `${sleepFrame}`);
+            sleepFrame++;
+            
+            if (sleepFrame > 8) {
+                sleepFrame = 2; // loop back to 2
+            }
+            sleepTimeout = setTimeout(animateSleep, speed);
+        }
+
+
+        function stopAllAnimations() {
+            clearTimeout(bodyTimeout);
+            clearTimeout(faceTimeout);
+            clearTimeout(loveTimeout);
+            clearTimeout(sleepTimeout);
+            isLovePlaying = false;
+        }
+
+        function updateMode() {
+            stopAllAnimations();
+
+            if (isDay) {
+                bgLayer.style.backgroundImage = "url('assets/background/day.png')";
+                
+                bodyImg.classList.remove('hidden-layer');
+                faceImg.classList.remove('hidden-layer');
+                sleepImg.classList.add('hidden-layer');
+                loveImg.classList.add('hidden-layer');
+                
+                awakeControls.classList.remove('hidden-layer');
+                sleepControls.classList.add('hidden-layer');
+
+                bodyPhase = 'base';
+                facePhase = 'waiting';
+                animateBody();
+                animateFace();
+            } else {
+                bgLayer.style.backgroundImage = "url('assets/background/night.png')";
+                
+                bodyImg.classList.add('hidden-layer');
+                faceImg.classList.add('hidden-layer');
+                loveImg.classList.add('hidden-layer');
+                sleepImg.classList.remove('hidden-layer');
+
+                awakeControls.classList.add('hidden-layer');
+                sleepControls.classList.remove('hidden-layer');
+
+                sleepFrame = 1;
+                animateSleep();
+            }
+        }
+
+        // Event Listeners for UI toggles
+        sizeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentSize = e.target.value;
+                updateMode(); // Restart animations to fetch correct path immediately
+            });
+        });
+
+        timeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                isDay = e.target.value === 'day';
+                updateMode();
+            });
+        });
+
+        // Start Initial
+        updateMode();
+    </script>
+</body>
+</html>

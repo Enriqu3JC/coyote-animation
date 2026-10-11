@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coyote Animation Preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-day: #ffffff;
+            --bg-night: #0f172a;
+            --text-day: #1e293b;
+            --text-night: #f8fafc;
+        }
+
+        body {
+            background-color: var(--bg-day);
+            color: var(--text-day);
+            transition: background-color 0.8s ease, color 0.8s ease;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body.night-mode {
+            background-color: var(--bg-night);
+            color: var(--text-night);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+                radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.05) 2px, transparent 2px),
+                radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+            background-size: 100px 100px;
+        }
+
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            transition: background-color 0.8s ease;
+        }
+        
+        .day-mode .navbar {
+            background-color: rgba(255, 255, 255, 0.85);
+        }
+
+        .night-mode .navbar {
+            background-color: rgba(15, 23, 42, 0.85);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .coyote-container {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            aspect-ratio: 1 / 1;
+            cursor: pointer;
+            border-radius: 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .day-mode .coyote-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        .coyote-container img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .theme-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            outline: none;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="day-mode">
+
+    <nav class="navbar w-full flex flex-col sm:flex-row justify-between items-center px-6 py-4 shadow-sm">
+        <h1 class="text-2xl font-bold tracking-tight mb-4 sm:mb-0">Coyote Animation Preview</h1>
+        
+        <div class="flex items-center space-x-6">
+            <a href="how.html" class="text-sm font-medium hover:text-blue-500 transition-colors">¿Cómo animarlo?</a>
+            <a href="parameters.html" class="text-sm font-medium hover:text-blue-500 transition-colors">Preview Studio</a>
+            
+            <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+            
+            <button id="theme-toggle" class="theme-btn" aria-label="Cambiar modo día/noche">
+                🌙
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex items-center justify-center p-6">
+        <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8 place-items-center">
+            
+            <!-- BIG Coyote -->
+            <div id="coyote-big" class="coyote-container">
+                <img class="layer-sleep hidden" src="" alt="Sleep" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <img class="layer-body" src="" alt="Body" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <img class="layer-face" src="" alt="Face" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <img class="layer-love hidden pointer-events-none z-10" src="" alt="Love" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <div class="absolute -bottom-8 left-0 w-full text-center text-sm font-semibold opacity-50 tracking-widest uppercase">Big</div>
+            </div>
+
+            <!-- MEDIUM Coyote -->
+            <div id="coyote-medium" class="coyote-container">
+                <img class="layer-sleep hidden" src="" alt="Sleep" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <img class="layer-body" src="" alt="Body" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <img class="layer-face" src="" alt="Face" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <img class="layer-love hidden pointer-events-none z-10" src="" alt="Love" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <div class="absolute -bottom-8 left-0 w-full text-center text-sm font-semibold opacity-50 tracking-widest uppercase">Medium</div>
+            </div>
+
+            <!-- SMALL Coyote -->
+            <div id="coyote-small" class="coyote-container">
+                <img class="layer-sleep hidden" src="" alt="Sleep" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <img class="layer-body" src="" alt="Body" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <img class="layer-face" src="" alt="Face" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <img class="layer-love hidden pointer-events-none z-10" src="" alt="Love" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                <div class="absolute -bottom-8 left-0 w-full text-center text-sm font-semibold opacity-50 tracking-widest uppercase">Small</div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const ANIMATION_SPEED = 120; // Default ms per frame
+
+        const configs = [
+            {
+                id: 'coyote-big',
+                paths: {
+                    body: 'assets/coyote/Big/Awake/Body/',
+                    face: 'assets/coyote/Big/Awake/Face/',
+                    love: 'assets/coyote/Big/love/',
+                    sleep: 'assets/coyote/Big/Sleep/'
+                }
+            },
+            {
+                id: 'coyote-medium',
+                paths: {
+                    body: 'assets/coyote/Medium/awake/body/',
+                    face: 'assets/coyote/Medium/awake/face/',
+                    love: 'assets/coyote/Medium/love/',
+                    sleep: 'assets/coyote/Medium/sleep/'
+                }
+            },
+            {
+                id: 'coyote-small',
+                paths: {
+                    body: 'assets/coyote/Small/awake/body/',
+                    face: 'assets/coyote/Small/awake/face/',
+                    love: 'assets/coyote/Small/love/',
+                    sleep: 'assets/coyote/Small/sleep/'
+                }
+            }
+        ];
+
+        class CoyoteAnimator {
+            constructor(config) {
+                this.paths = config.paths;
+                this.container = document.getElementById(config.id);
+                
+                this.imgSleep = this.container.querySelector('.layer-sleep');
+                this.imgBody = this.container.querySelector('.layer-body');
+                this.imgFace = this.container.querySelector('.layer-face');
+                this.imgLove = this.container.querySelector('.layer-love');
+
+                // Internal State
+                this.mode = 'day'; 
+                this.isLovePlaying = false;
+
+                // Timers
+                this.bodyTimer = null;
+                this.faceTimer = null;
+                this.sleepTimer = null;
+                this.loveTimer = null;
+
+                // Animation Sequences
+                this.bodyIndex = 0; // 0=base, 1-7=raise
+                this.bodyState = 'intro'; // 'intro', 'loop'
+                this.bodyDir = 1;
+
+                this.faceIndex = 0; // 0=base, 1-8=blink
+                this.faceState = 'idle'; // 'idle', 'blink_up', 'blink_down'
+
+                this.sleepIndex = 1; // 1-8
+                this.sleepDir = 1;
+
+                this.loveIndex = 1; // 1-21
+
+                // Attach interaction
+                this.container.addEventListener('click', () => this.triggerLove());
+
+                // Boot up
+                this.setMode('day');
+            }
+
+            setMode(newMode) {
+                this.mode = newMode;
+                this.clearAllTimers();
+
+                if (this.mode === 'day') {
+                    // Show awake layers
+                    this.imgSleep.classList.add('hidden');
+                    this.imgBody.classList.remove('hidden');
+                    this.imgFace.classList.remove('hidden');
+                    
+                    // Reset day states
+                    this.bodyIndex = 0;
+                    this.bodyState = 'intro';
+                    this.bodyDir = 1;
+                    
+                    this.faceIndex = 0;
+                    this.faceState = 'idle';
+                    
+                    this.tickBody();
+                    this.tickFace();
+                } else {
+                    // Night Mode: Show sleep layer, hide awake layers
+                    this.imgSleep.classList.remove('hidden');
+                    this.imgBody.classList.add('hidden');
+                    this.imgFace.classList.add('hidden');
+                    
+                    // Cancel love if active
+                    this.isLovePlaying = false;
+                    this.imgLove.classList.add('hidden');
+
+                    // Reset night state
+                    this.sleepIndex = 1;
+                    this.sleepDir = 1;
+
+                    this.tickSleep();
+                }
+            }
+
+            clearAllTimers() {
+                clearTimeout(this.bodyTimer);
+                clearTimeout(this.faceTimer);
+                clearTimeout(this.sleepTimer);
+                clearTimeout(this.loveTimer);
+            }
+
+            tickBody() {
+                if (this.mode !== 'day') return;
+
+                let file = 'base.png';
+                if (this.bodyIndex > 0) file = `raise_${this.bodyIndex}.png`;
+                this.imgBody.src = this.paths.body + file;
+
+                if (this.bodyState === 'intro') {
+                    this.bodyIndex++;
+                    if (this.bodyIndex >= 7) {
+                        this.bodyIndex = 7;
+                        this.bodyState = 'loop';
+                        this.bodyDir = -1; // reverse direction
+                    }
+                } else if (this.bodyState === 'loop') {
+                    this.bodyIndex += this.bodyDir;
+                    if (this.bodyIndex >= 7) {
+                        this.bodyIndex = 7;
+                        this.bodyDir = -1;
+                    } else if (this.bodyIndex <= 4) { // Ping-pong limit is now 4
+                        this.bodyIndex = 4;
+                        this.bodyDir = 1;
+                    }
+                }
+
+                this.bodyTimer = setTimeout(() => this.tickBody(), ANIMATION_SPEED);
+            }
+
+            tickFace() {
+                if (this.mode !== 'day') return;
+
+                let file = 'base.png';
+                if (this.faceState !== 'idle' && this.faceIndex > 0) {
+                    file = `blink_${this.faceIndex}.png`;
+                }
+                this.imgFace.src = this.paths.face + file;
+
+                let nextDelay = 40; // Fast blink frames
+
+                if (this.faceState === 'idle') {
+                    nextDelay = 2500 + Math.random() * 1000; // Random idle between 2.5s - 3.5s
+                    this.faceState = 'blink_up';
+                    this.faceIndex = 1;
+                } else if (this.faceState === 'blink_up') {
+                    this.faceIndex++;
+                    if (this.faceIndex >= 8) {
+                        this.faceIndex = 8;
+                        this.faceState = 'blink_down';
+                    }
+                } else if (this.faceState === 'blink_down') {
+                    this.faceIndex--;
+                    if (this.faceIndex <= 0) {
+                        this.faceIndex = 0;
+                        this.faceState = 'idle'; // Wait before next blink
+                    }
+                }
+
+                this.faceTimer = setTimeout(() => this.tickFace(), nextDelay);
+            }
+
+            tickSleep() {
+                if (this.mode !== 'night') return;
+
+                this.imgSleep.src = `${this.paths.sleep}${this.sleepIndex}.png`;
+
+                this.sleepIndex += this.sleepDir;
+                if (this.sleepIndex >= 8) {
+                    this.sleepIndex = 8;
+                    this.sleepDir = -1;
+                } else if (this.sleepIndex <= 1) {
+                    this.sleepIndex = 1;
+                    this.sleepDir = 1;
+                }
+
+                // Sleep frames look slightly better with a tiny bit more delay
+                this.sleepTimer = setTimeout(() => this.tickSleep(), ANIMATION_SPEED * 1.5);
+            }
+
+            triggerLove() {
+                if (this.mode !== 'day' || this.isLovePlaying) return;
+                
+                this.isLovePlaying = true;
+                this.loveIndex = 1;
+                this.imgLove.classList.remove('hidden');
+                
+                this.tickLove();
+            }
+
+            tickLove() {
+                if (!this.isLovePlaying || this.mode !== 'day') return;
+
+                this.imgLove.src = `${this.paths.love}${this.loveIndex}.png`;
+
+                this.loveIndex++;
+                if (this.loveIndex > 21) {
+                    this.isLovePlaying = false;
+                    this.imgLove.classList.add('hidden');
+                } else {
+                    this.loveTimer = setTimeout(() => this.tickLove(), 70); // Slightly faster for hearts
+                }
+            }
+        }
+
+        window.onload = () => {
+            const animators = configs.map(config => new CoyoteAnimator(config));
+
+            const themeBtn = document.getElementById('theme-toggle');
+            let isDay = true;
+
+            themeBtn.addEventListener('click', () => {
+                isDay = !isDay;
+                
+                if (isDay) {
+                    document.body.classList.replace('night-mode', 'day-mode');
+                    themeBtn.innerText = '🌙'; // Icon to switch to night
+                } else {
+                    document.body.classList.replace('day-mode', 'night-mode');
+                    themeBtn.innerText = '☀️'; // Icon to switch to day
+                }
+
+                // Push new state to all animators
+                animators.forEach(a => a.setMode(isDay ? 'day' : 'night'));
+            });
+        };
+    </script>
+</body>
+</html>

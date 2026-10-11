@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Animación - Proyecto Coyote</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { primary: '#4F46E5', secondary: '#10B981', dark: '#0F172A', surface: '#F8FAFC' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #F1F5F9; color: #334155; }
+        .checkerboard {
+            background-color: #e5e5f7;
+            background-image: repeating-linear-gradient(45deg, #d2d2d2 25%, transparent 25%, transparent 75%, #d2d2d2 75%, #d2d2d2), repeating-linear-gradient(45deg, #d2d2d2 25%, #e5e5f7 25%, #e5e5f7 75%, #d2d2d2 75%, #d2d2d2);
+            background-position: 0 0, 10px 10px;
+            background-size: 20px 20px;
+        }
+        .demo-box {
+            width: 100%;
+            max-width: 240px;
+            aspect-ratio: 1 / 1;
+            position: relative;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.1);
+            margin: 0 auto;
+        }
+        .demo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            top: 0;
+            left: 0;
+            image-rendering: pixelated; /* Helps if sprites are low res */
+        }
+        .code-block {
+            background: #1E293B;
+            color: #E2E8F0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-book-open text-primary text-2xl mr-3"></i>
+                    <span class="font-bold text-xl text-dark">Docs</span>
+                </div>
+                <div class="flex items-center space-x-2 sm:space-x-6 overflow-x-auto">
+                    <a href="index.html" class="text-gray-500 hover:text-primary transition-colors font-medium whitespace-nowrap px-2">Coyote Animation Preview</a>
+                    <a href="how.html" class="text-primary border-b-2 border-primary transition-colors font-medium h-full flex items-center whitespace-nowrap px-2">how.html</a>
+                    <a href="parameters.html" class="text-gray-500 hover:text-primary transition-colors font-medium whitespace-nowrap px-2">parameters.html</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="bg-dark text-white py-16 text-center border-b-4 border-primary">
+        <div class="max-w-4xl mx-auto px-4">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-6">Especificaciones de Animación</h1>
+            <p class="text-xl text-gray-300">Guía técnica detallada sobre la lógica de capas, ciclos "Ping-Pong" y directrices de implementación para desarrollo móvil.</p>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
+
+        <section class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h2 class="text-3xl font-bold text-dark mb-4 border-l-4 border-primary pl-4">1. La Lógica "Ping-Pong"</h2>
+            <p class="text-gray-600 text-lg leading-relaxed mb-6">
+                El término <strong>"Ping-Pong"</strong> se refiere a una técnica de animación donde una secuencia de fotogramas se reproduce hacia adelante y, al llegar al final, se reproduce en reversa para volver al punto de inicio. Esto evita saltos bruscos ("hard resets") y crea bucles fluidos y orgánicos, ideales para respiraciones, parpadeos o movimientos pendulares (como mover la cola).
+            </p>
+            <div class="bg-blue-50 text-blue-800 p-4 rounded-lg flex items-start">
+                <i class="fa-solid fa-circle-info mt-1 mr-3 text-blue-500"></i>
+                <p><strong>Ejemplo conceptual:</strong> En lugar de reproducir <code>[1, 2, 3, 4] -> [1, 2, 3, 4]</code> (lo que causaría un salto del 4 al 1), reproducimos <code>[1, 2, 3, 4, 3, 2] -> [1, 2, 3, 4, 3, 2]</code>.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-3xl font-bold text-dark mb-8 border-l-4 border-primary pl-4">2. Deconstrucción de Capas (Estado: Despierto)</h2>
+            <p class="text-gray-600 mb-8 text-lg">El estado "Awake" es un compuesto de 3 capas independientes. Es crucial entender que estas capas <strong>no están sincronizadas</strong> entre sí; cada una tiene su propia duración y reglas para sentirse viva.</p>
+
+            <div class="space-y-12">
+                <!-- Capa 1: Cuerpo -->
+                <div class="flex flex-col lg:flex-row bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="lg:w-1/3 bg-gray-50 p-8 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-gray-200">
+                        <span class="text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1 rounded-full mb-6 uppercase tracking-wider">Capa 1: Fondo (Cuerpo)</span>
+                        <div class="demo-box checkerboard mb-6">
+                            <img id="demo-body" src="" alt="Animación del Cuerpo">
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mb-2 overflow-hidden">
+                            <div id="body-progress" class="bg-blue-500 h-2 transition-all duration-100 w-0"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 text-center" id="body-state-text">Iniciando...</p>
+                    </div>
+                    <div class="lg:w-2/3 p-8">
+                        <h3 class="font-bold text-2xl mb-4">Cuerpo (Raise & Wag)</h3>
+                        <p class="text-gray-600 mb-6">La animación del cuerpo es la más compleja del estado base. No es un simple loop continuo. Está dividida en dos fases para simular que el coyote se despierta/levanta y luego se queda en un estado de alerta expectante.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                <h4 class="font-bold text-gray-800 mb-2"><i class="fa-solid fa-arrow-up-right-dots text-primary mr-2"></i>Fase 1: El Levantamiento (Intro Secuencial)</h4>
+                                <p class="text-sm text-gray-600 mb-2">Comienza desde el estado base estático. Al activarse, reproduce la secuencia del 1 al 7 una sola vez. Esto simula cómo levanta la cabeza, endereza el cuerpo y alza la cola.</p>
+                                <code class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-800">base -> raise_1 -> raise_2 -> raise_3 -> raise_4 -> raise_5 -> raise_6 -> raise_7</code>
+                            </div>
+                            
+                            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                <h4 class="font-bold text-blue-900 mb-2"><i class="fa-solid fa-rotate text-blue-600 mr-2"></i>Fase 2: Bucle Restringido (Ping-Pong)</h4>
+                                <p class="text-sm text-blue-800 mb-2">Una vez que llega a <code>raise_7</code>, <strong>nunca vuelve al frame 1</strong>. En su lugar, entra en un loop de Ping-Pong restringido entre los frames 4 y 7. Esto simula la respiración y el ligero movimiento de la cola sin que el coyote vuelva a bajar completamente.</p>
+                                <code class="text-xs bg-blue-200 px-2 py-1 rounded text-blue-900 font-bold block overflow-x-auto whitespace-nowrap">
+                                    [Loop Infinito]: raise_7 -> raise_6 -> raise_5 -> raise_4 -> raise_5 -> raise_6 -> raise_7
+                                </code>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-xs font-mono text-gray-400">Ruta: <code>assets/coyote/Medium/awake/body/</code></p>
+                    </div>
+                </div>
+
+                <!-- Capa 2: Rostro -->
+                <div class="flex flex-col lg:flex-row-reverse bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="lg:w-1/3 bg-gray-50 p-8 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-l border-gray-200">
+                        <span class="text-xs font-bold bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full mb-6 uppercase tracking-wider">Capa 2: Medio (Rostro)</span>
+                        <div class="demo-box checkerboard mb-4">
+                            <img id="demo-face" src="" alt="Animación del Rostro">
+                        </div>
+                        <p class="text-xs text-emerald-600 font-bold mt-2" id="face-state-text">Esperando...</p>
+                    </div>
+                    <div class="lg:w-2/3 p-8">
+                        <h3 class="font-bold text-2xl mb-4">Rostro (Parpadeo Aleatorio)</h3>
+                        <p class="text-gray-600 mb-4">El rostro descansa sobre el cuerpo. Su función principal es darle vida mediante parpadeos impredecibles. Un parpadeo en un intervalo fijo se ve robótico.</p>
+                        <ul class="list-disc pl-5 space-y-2 text-gray-600 mb-6">
+                            <li><strong>Estado Base:</strong> Permanece estático en <code>base.png</code> mostrando los ojos abiertos.</li>
+                            <li><strong>Intervalo:</strong> Un temporizador aleatorio (ej. entre 2 y 6 segundos) dispara la animación.</li>
+                            <li><strong>Acción (Ping-Pong):</strong> Reproduce rápidamente los frames <code>blink_1</code> hasta <code>blink_8</code> (ojos cerrados) y regresa del 8 al 1.</li>
+                        </ul>
+                        <div class="bg-gray-50 p-3 rounded font-mono text-sm overflow-x-auto text-gray-700 border border-gray-200">
+                            base.png (Espera Aleatoria) ➔ [1,2,3,4,5,6,7,8,7,6,5,4,3,2] ➔ base.png
+                        </div>
+                        <p class="mt-4 text-xs font-mono text-gray-400">Ruta: <code>assets/coyote/Medium/awake/face/</code></p>
+                    </div>
+                </div>
+
+                <!-- Capa 3: Love -->
+                <div class="flex flex-col lg:flex-row bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="lg:w-1/3 bg-gray-50 p-8 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-gray-200">
+                        <span class="text-xs font-bold bg-pink-100 text-pink-700 px-3 py-1 rounded-full mb-6 uppercase tracking-wider">Capa 3: Frente (Efectos)</span>
+                        <div class="demo-box checkerboard mb-4">
+                            <img id="demo-love" src="" alt="Animación de Corazones">
+                        </div>
+                    </div>
+                    <div class="lg:w-2/3 p-8">
+                        <h3 class="font-bold text-2xl mb-4">Efectos (Love Layer)</h3>
+                        <p class="text-gray-600 mb-4">Esta es la capa superior. A diferencia de las demás, <strong>no utiliza lógica Ping-Pong</strong>. Es una secuencia lineal estricta diseñada para reproducirse constantemente sin interrupciones.</p>
+                        <div class="bg-pink-50 p-4 rounded-lg border border-pink-100 mb-4">
+                            <h4 class="font-bold text-pink-900 mb-2">Loop Continuo Secuencial</h4>
+                            <p class="text-sm text-pink-800">El ciclo va desde el frame <code>1.png</code> hasta el <code>21.png</code> de manera secuencial. Al terminar el frame 21, salta inmediatamente al frame 1, ya que la animación está diseñada para conectar el último frame con el primero sin saltos perceptibles.</p>
+                        </div>
+                        <p class="mt-4 text-xs font-mono text-red-500 font-bold bg-red-50 p-2 rounded inline-block">Ruta Corregida: <code>assets/coyote/Medium/love/</code> (NO en awake/)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Estado Dormido -->
+        <section>
+            <h2 class="text-3xl font-bold text-dark mb-8 border-l-4 border-indigo-500 pl-4">3. Estado Dormido (Sleep)</h2>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex flex-col md:flex-row gap-8 items-center">
+                <div class="w-full md:w-1/3 flex flex-col items-center">
+                    <div class="demo-box checkerboard mb-4 border-4 border-indigo-100">
+                        <img id="demo-sleep" src="" alt="Animación Dormido">
+                    </div>
+                    <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full">Una sola capa</span>
+                </div>
+                <div class="w-full md:w-2/3">
+                    <p class="text-gray-600 mb-6 text-lg">Cuando la aplicación entra en estado de inactividad, se cambia completamente la vista. El estado <em>Sleep</em> es mucho más sencillo estructuralmente, ya que colapsa todas las animaciones en una sola secuencia base.</p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center text-white mt-1 mr-3"><i class="fa-solid fa-check text-xs"></i></div>
+                            <div>
+                                <strong class="block text-gray-800">Ping-Pong Simple</strong>
+                                <span class="text-gray-600 text-sm">Simula la inhalación y exhalación. Sube de <code>1.png</code> a <code>8.png</code> (inhalar) y regresa bajando de <code>7.png</code> a <code>2.png</code> (exhalar).</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center text-white mt-1 mr-3"><i class="fa-solid fa-code-branch text-xs"></i></div>
+                            <div>
+                                <strong class="block text-gray-800">La Secuencia</strong>
+                                <code class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-700 block mt-1">[1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2]</code>
+                            </div>
+                        </li>
+                    </ul>
+                    <p class="mt-6 text-xs font-mono text-gray-400">Ruta: <code>assets/coyote/Medium/sleep/</code></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Guía para Desarrolladores Móviles -->
+        <section class="mb-16">
+            <h2 class="text-3xl font-bold text-dark mb-8 border-l-4 border-amber-400 pl-4">4. Guía de Implementación Mobile (iOS & Android)</h2>
+            <div class="bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-slate-900 px-6 py-4 border-b border-slate-700 flex items-center">
+                    <i class="fa-solid fa-mobile-screen-button text-amber-400 mr-3 text-xl"></i>
+                    <h3 class="text-white font-bold text-lg">Directrices Críticas de Arquitectura UI</h3>
+                </div>
+                
+                <div class="p-6 md:p-8 space-y-8">
+                    <!-- Z-Index -->
+                    <div>
+                        <h4 class="text-amber-300 font-bold text-lg mb-3 border-b border-slate-600 pb-2">A. Apilamiento de Capas (Z-Index)</h4>
+                        <p class="text-slate-300 text-sm mb-4">Para el estado <em>Awake</em>, debes superponer 3 vistas de imagen exactas. Ambas plataformas requieren contenedores específicos para lograr esto de forma responsiva y manteniendo la misma relación de aspecto.</p>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="bg-slate-900 p-4 rounded-lg">
+                                <span class="text-xs font-bold text-slate-400 block mb-2"><i class="fa-brands fa-apple mr-2"></i>iOS (SwiftUI)</span>
+                                <pre class="text-green-400 text-xs overflow-x-auto"><code>ZStack {
+    Image("body_frame") // Fondo
+    Image("face_frame") // Medio
+    Image("love_frame") // Frente
+}</code></pre>
+                            </div>
+                            <div class="bg-slate-900 p-4 rounded-lg">
+                                <span class="text-xs font-bold text-slate-400 block mb-2"><i class="fa-brands fa-android mr-2 text-green-500"></i>Android (XML/Compose)</span>
+                                <pre class="text-green-400 text-xs overflow-x-auto"><code>// Compose
+Box {
+    Image(...) // Body
+    Image(...) // Face
+    Image(...) // Love
+}
+// XML: Usa FrameLayout o ConstraintLayout</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timers & Threads -->
+                    <div>
+                        <h4 class="text-amber-300 font-bold text-lg mb-3 border-b border-slate-600 pb-2">B. Temporizadores Independientes y Hilos de UI</h4>
+                        <p class="text-slate-300 text-sm mb-4"><strong>REGLA DE ORO:</strong> Nunca vincules la animación de las tres capas a un solo <code>Timer</code> o bucle. Dado que el Cuerpo tiene ~4 frames en loop, el Rostro parpadea asíncronamente y Love tiene 21 frames, un bucle maestro arruinará el "timing".</p>
+                        
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div>
+                                <h5 class="text-white font-semibold text-sm mb-2"><i class="fa-brands fa-swift mr-2 text-orange-500"></i>Estrategia iOS</h5>
+                                <ul class="text-slate-400 text-xs space-y-2 list-disc pl-4">
+                                    <li>Evita bloquear el Main Thread. Usa <code>Timer.publish(every:...).autoconnect()</code> independientes en SwiftUI.</li>
+                                    <li>Para UIKit, considera crear 3 instancias de <code>UIImageView</code> y asigna arrays independientes a su propiedad <code>animationImages</code> estableciendo sus respectivos <code>animationDuration</code>. El Rostro requeriría un <code>Timer</code> manual para disparar el parpadeo.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h5 class="text-white font-semibold text-sm mb-2"><i class="fa-brands fa-android mr-2 text-green-500"></i>Estrategia Android</h5>
+                                <ul class="text-slate-400 text-xs space-y-2 list-disc pl-4">
+                                    <li>Utiliza <strong>Kotlin Coroutines</strong> (<code>viewModelScope.launch</code> o <code>lifecycleScope</code>) para crear bucles <code>while(isActive) { delay(ms) }</code> para gestionar el índice de los frames.</li>
+                                    <li>Actualiza el estado (StateFlow) que la UI de Compose observa.</li>
+                                    <li>Alternativamente, crear animaciones XML en <code>res/drawable</code> tipo <code>&lt;animation-list&gt;</code> para Body y Love, programando el Face vía código.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Utility: Fallback for missing local assets
+            const generateFallback = (folder, filename) => {
+                return `https://placehold.co/240x240/f1f5f9/64748b?text=${folder}%0A${filename}`;
+            };
+
+            const setImageSafely = (imgElement, path, folder, filename) => {
+                imgElement.onerror = () => {
+                    imgElement.onerror = null; // prevent infinite loop
+                    imgElement.src = generateFallback(folder, filename);
+                };
+                imgElement.src = path;
+            };
+
+            /* ==========================================
+               1. BODY ANIMATION (The Raise & Restricted Wag)
+               ========================================== */
+            const bodyImg = document.getElementById('demo-body');
+            const bodyStateText = document.getElementById('body-state-text');
+            const bodyProgress = document.getElementById('body-progress');
+            
+            // Phase 1: Intro (1 to 7)
+            const bodyIntroFrames = [1, 2, 3, 4, 5, 6, 7];
+            // Phase 2: Restricted Loop (Ping-Pong between 4 and 7)
+            // Starts at 6 down to 4, then up to 7, repeating.
+            const bodyLoopFrames = [6, 5, 4, 5, 6, 7]; 
+            
+            let isBodyIntro = true;
+            let bodyIndex = 0;
+            const bodyIntervalMs = 150;
+
+            const updateBody = () => {
+                let currentFrame;
+                
+                if (isBodyIntro) {
+                    currentFrame = bodyIntroFrames[bodyIndex];
+                    bodyStateText.innerText = `Fase 1: Levantando (Frame ${currentFrame})`;
+                    bodyProgress.style.width = `${(bodyIndex / bodyIntroFrames.length) * 100}%`;
+                    bodyProgress.classList.replace('bg-blue-500', 'bg-indigo-400');
+                    
+                    bodyIndex++;
+                    if (bodyIndex >= bodyIntroFrames.length) {
+                        isBodyIntro = false; // Transition to loop
+                        bodyIndex = 0;
+                        bodyProgress.style.width = '100%';
+                    }
+                } else {
+                    currentFrame = bodyLoopFrames[bodyIndex];
+                    bodyStateText.innerText = `Fase 2: Loop Restringido (Frame ${currentFrame})`;
+                    bodyProgress.classList.replace('bg-indigo-400', 'bg-blue-500');
+                    
+                    bodyIndex = (bodyIndex + 1) % bodyLoopFrames.length;
+                }
+
+                const filename = `raise_${currentFrame}.png`;
+                const path = `assets/coyote/Medium/awake/body/${filename}`;
+                setImageSafely(bodyImg, path, 'body', filename);
+            };
+
+            // Start Body Animation
+            setImageSafely(bodyImg, 'assets/coyote/Medium/awake/body/base.png', 'body', 'base.png');
+            setTimeout(() => {
+                setInterval(updateBody, bodyIntervalMs);
+            }, 1000); // Wait 1 sec before waking up
+
+
+            /* ==========================================
+               2. FACE ANIMATION (Idle + Random Ping-Pong Blink)
+               ========================================== */
+            const faceImg = document.getElementById('demo-face');
+            const faceStateText = document.getElementById('face-state-text');
+            const blinkFrames = [1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2];
+            
+            let isBlinking = false;
+            let blinkIdx = 0;
+            let faceTimer;
+
+            const setFaceBase = () => {
+                setImageSafely(faceImg, 'assets/coyote/Medium/awake/face/base.png', 'face', 'base.png');
+                faceStateText.innerText = "Base (Esperando...)";
+                faceStateText.className = "text-xs text-gray-500 font-bold mt-2";
+            };
+
+            const doBlink = () => {
+                if (blinkIdx < blinkFrames.length) {
+                    const frame = blinkFrames[blinkIdx];
+                    const filename = `blink_${frame}.png`;
+                    setImageSafely(faceImg, `assets/coyote/Medium/awake/face/${filename}`, 'face', filename);
+                    faceStateText.innerText = `Parpadeando (${frame})`;
+                    faceStateText.className = "text-xs text-emerald-600 font-bold mt-2";
+                    
+                    blinkIdx++;
+                    setTimeout(doBlink, 50); // fast blink
+                } else {
+                    // Blink finished
+                    isBlinking = false;
+                    blinkIdx = 0;
+                    setFaceBase();
+                    scheduleNextBlink();
+                }
+            };
+
+            const scheduleNextBlink = () => {
+                // Random time between 2s and 5s
+                const nextDelay = Math.random() * 3000 + 2000;
+                setTimeout(() => {
+                    isBlinking = true;
+                    doBlink();
+                }, nextDelay);
+            };
+
+            // Initialize Face
+            setFaceBase();
+            scheduleNextBlink();
+
+
+            /* ==========================================
+               3. LOVE ANIMATION (Sequential 1 to 21)
+               ========================================== */
+            const loveImg = document.getElementById('demo-love');
+            let loveFrame = 1;
+            
+            setInterval(() => {
+                const filename = `${loveFrame}.png`;
+                // FIX: Path corrected to assets/coyote/Medium/love/
+                const path = `assets/coyote/Medium/love/${filename}`;
+                setImageSafely(loveImg, path, 'love', filename);
+                
+                loveFrame = loveFrame >= 21 ? 1 : loveFrame + 1;
+            }, 80); // Smooth continuous playback
+
+
+            /* ==========================================
+               4. SLEEP ANIMATION (Ping-Pong 1-8-2)
+               ========================================== */
+            const sleepImg = document.getElementById('demo-sleep');
+            const sleepFrames = [1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2];
+            let sleepIdx = 0;
+
+            setInterval(() => {
+                const frame = sleepFrames[sleepIdx];
+                const filename = `${frame}.png`;
+                const path = `assets/coyote/Medium/sleep/${filename}`;
+                setImageSafely(sleepImg, path, 'sleep', filename);
+                
+                sleepIdx = (sleepIdx + 1) % sleepFrames.length;
+            }, 200); // Slower, relaxed breathing
+
+        });
+    </script>
+</body>
+</html>
