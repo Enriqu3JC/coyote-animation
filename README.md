@@ -1,4 +1,5 @@
 # coyote-animation
+'''
 │   animation_previewer.html
 │   index.html
 │
@@ -175,3 +176,4 @@
                     6.png
                     7.png
                     8.png
+'''
